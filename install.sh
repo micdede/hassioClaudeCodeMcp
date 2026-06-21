@@ -45,19 +45,20 @@ fi
 PYTHON_VERSION=$($PYTHON --version 2>&1)
 echo "✓ Python: $PYTHON_VERSION"
 
-# 3. pip sicherstellen
-if ! $PYTHON -m pip --version &>/dev/null 2>&1; then
-    echo "  pip nicht vorhanden, installiere..."
-    apk add --quiet py3-pip 2>/dev/null || $PYTHON -m ensurepip --upgrade 2>/dev/null || {
-        echo "✗ pip konnte nicht installiert werden."
-        exit 1
-    }
-fi
-echo "✓ pip verfügbar"
+# 3. Virtualenv erstellen (vermeidet PEP 668 "externally-managed-environment")
+VENV_DIR="$INSTALL_DIR/venv"
+echo "Erstelle Python-Virtualenv..."
+$PYTHON -m venv "$VENV_DIR" || {
+    echo "  venv fehlgeschlagen, installiere python3-venv..."
+    apk add --quiet py3-venv
+    $PYTHON -m venv "$VENV_DIR"
+}
+PYTHON="$VENV_DIR/bin/python"
+echo "✓ Virtualenv: $VENV_DIR"
 
-# 4. mcp-Paket installieren
+# 4. mcp-Paket im venv installieren
 echo "Installiere mcp-Paket (Anthropic MCP SDK)..."
-$PYTHON -m pip install --quiet --upgrade "mcp>=1.0.0"
+"$VENV_DIR/bin/pip" install --quiet --upgrade "mcp>=1.0.0"
 echo "✓ mcp-Paket installiert"
 
 # 5. Node-RED Verbindung testen
