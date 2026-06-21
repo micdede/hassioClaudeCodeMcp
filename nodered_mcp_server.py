@@ -13,14 +13,49 @@ from mcp.server.stdio import stdio_server
 from mcp import types
 
 NODE_RED_URL = os.environ.get("NODE_RED_URL", "http://localhost:1880")
+NODE_RED_TOKEN = os.environ.get("NODE_RED_TOKEN", "")
+NODE_RED_USERNAME = os.environ.get("NODE_RED_USERNAME", "")
+NODE_RED_PASSWORD = os.environ.get("NODE_RED_PASSWORD", "")
 
 app = Server("nodered-mcp")
+
+_auth_token: str = ""
+
+
+def _get_token() -> str:
+    """Fetch a Node-RED session token via username/password if no static token is set."""
+    global _auth_token
+    if NODE_RED_TOKEN:
+        return NODE_RED_TOKEN
+    if _auth_token:
+        return _auth_token
+    if not NODE_RED_USERNAME:
+        return ""
+    data = json.dumps({
+        "client_id": "node-red-admin",
+        "grant_type": "password",
+        "username": NODE_RED_USERNAME,
+        "password": NODE_RED_PASSWORD,
+        "scope": "*",
+    }).encode()
+    req = urllib.request.Request(
+        f"{NODE_RED_URL}/auth/token",
+        data=data,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        _auth_token = json.loads(resp.read().decode())["access_token"]
+    return _auth_token
 
 
 def nr_request(method: str, path: str, data: Any = None) -> Any:
     url = f"{NODE_RED_URL}{path}"
     body = json.dumps(data).encode() if data is not None else None
     headers = {"Content-Type": "application/json", "Node-RED-API-Version": "v2"}
+    token = _get_token()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
     req = urllib.request.Request(url, data=body, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
