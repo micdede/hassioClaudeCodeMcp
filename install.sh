@@ -1,6 +1,6 @@
 #!/bin/bash
 # Node-RED MCP Server — Installation für Home Assistant OS (Web Terminal Add-on)
-# Ausführen als root im HAOS Web Terminal
+# Ausführen als root im HAOS Web Terminal — v4
 
 set -e
 
