@@ -25,7 +25,7 @@ fi
 chmod +x "$INSTALL_DIR/nodered_mcp_server.py"
 echo "✓ Server-Script nach $INSTALL_DIR geladen"
 
-# 2. Python3 prüfen
+# 2. Python3 prüfen — auf HAOS (Alpine) bei Bedarf installieren
 PYTHON=""
 for cmd in python3 python; do
     if command -v "$cmd" &>/dev/null; then
@@ -35,20 +35,21 @@ for cmd in python3 python; do
 done
 
 if [ -z "$PYTHON" ]; then
-    echo "✗ Kein Python gefunden. Auf HAOS bitte das 'SSH & Web Terminal' Add-on verwenden"
-    echo "  und sicherstellen dass Python verfügbar ist."
-    exit 1
+    echo "  Python nicht gefunden, installiere via apk..."
+    apk add --quiet python3 py3-pip || {
+        echo "✗ Python konnte nicht installiert werden."
+        exit 1
+    }
+    PYTHON="python3"
 fi
 PYTHON_VERSION=$($PYTHON --version 2>&1)
-echo "✓ Python gefunden: $PYTHON_VERSION"
+echo "✓ Python: $PYTHON_VERSION"
 
-# 3. pip sicherstellen (auf HAOS oft nicht direkt im PATH)
-echo "Prüfe pip..."
+# 3. pip sicherstellen
 if ! $PYTHON -m pip --version &>/dev/null 2>&1; then
-    echo "  pip nicht vorhanden, versuche es zu bootstrappen..."
-    $PYTHON -m ensurepip --upgrade 2>/dev/null || {
+    echo "  pip nicht vorhanden, installiere..."
+    apk add --quiet py3-pip 2>/dev/null || $PYTHON -m ensurepip --upgrade 2>/dev/null || {
         echo "✗ pip konnte nicht installiert werden."
-        echo "  Auf HAOS: Führe zuerst 'apk add py3-pip' im Terminal aus."
         exit 1
     }
 fi
