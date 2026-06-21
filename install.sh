@@ -6,16 +6,24 @@ set -e
 
 INSTALL_DIR="/root/nodered-mcp"
 CLAUDE_SETTINGS="/root/.claude/settings.json"
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_RAW="https://raw.githubusercontent.com/micdede/hassioClaudeCodeMcp/main"
 
 echo "=== Node-RED MCP Server Installation ==="
 echo ""
 
-# 1. Zielverzeichnis anlegen
+# 1. Server-Script von GitHub laden
 mkdir -p "$INSTALL_DIR"
-cp "$SCRIPT_DIR/nodered_mcp_server.py" "$INSTALL_DIR/nodered_mcp_server.py"
+echo "Lade nodered_mcp_server.py von GitHub..."
+if command -v wget &>/dev/null; then
+    wget -qO "$INSTALL_DIR/nodered_mcp_server.py" "$REPO_RAW/nodered_mcp_server.py"
+elif command -v curl &>/dev/null; then
+    curl -fsSL "$REPO_RAW/nodered_mcp_server.py" -o "$INSTALL_DIR/nodered_mcp_server.py"
+else
+    echo "✗ Weder wget noch curl gefunden."
+    exit 1
+fi
 chmod +x "$INSTALL_DIR/nodered_mcp_server.py"
-echo "✓ Server-Script nach $INSTALL_DIR kopiert"
+echo "✓ Server-Script nach $INSTALL_DIR geladen"
 
 # 2. Python3 prüfen
 PYTHON=""
